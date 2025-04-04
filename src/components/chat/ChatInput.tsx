@@ -1,49 +1,62 @@
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Send } from 'lucide-react';
-import { useChatStore } from '@store/stores/useChatStore';
-import IconButton from '@components/ui/icon-button';
+
+import { IconButton } from '@components/ui/IconButton';
+import { useChatStore } from '@stores/chatStore';
 
 interface ChatInputProps {
+  /**
+   * 비활성화 여부
+   */
   disabled?: boolean;
 }
 
 /**
- * 채팅 입력 컴포넌트
- * 사용자가 메시지를 입력하고 전송할 수 있는 폼을 제공합니다.
+ * 챗봇 입력 컴포넌트
+ * 
+ * 사용자가 메시지를 입력하고 전송할 수 있는 폼입니다.
  */
-const ChatInput = ({ disabled = false }: ChatInputProps) => {
+const ChatInput = memo(({ disabled = false }: ChatInputProps) => {
   const [message, setMessage] = useState('');
-  const sendMessage = useChatStore((state) => state.sendMessage);
+  const { sendMessage } = useChatStore();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (message.trim()) {
-      sendMessage(message.trim());
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      // 공백만 있는 메시지는 전송하지 않음
+      const trimmedMessage = message.trim();
+      if (!trimmedMessage) return;
+      
+      sendMessage(trimmedMessage);
       setMessage('');
-    }
-  };
+    },
+    [message, sendMessage]
+  );
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form onSubmit={handleSubmit} className="flex space-x-2">
       <input
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        disabled={disabled}
         placeholder="메시지를 입력하세요..."
-        className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+        className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={disabled}
       />
-      <IconButton 
-        type="submit" 
-        disabled={disabled || !message.trim()} 
-        className="bg-blue-500 hover:bg-blue-600 text-white disabled:bg-gray-400"
-        aria-label="전송"
+      <IconButton
+        type="submit"
+        variant="primary"
+        size="sm"
+        disabled={disabled || !message.trim()}
+        aria-label="메시지 보내기"
       >
-        <Send size={16} />
+        <Send className="h-4 w-4" />
       </IconButton>
     </form>
   );
-};
+});
 
-export default ChatInput;
+ChatInput.displayName = 'ChatInput';
+
+export { ChatInput };
