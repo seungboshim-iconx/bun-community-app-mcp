@@ -1,14 +1,16 @@
-import { useEffect, useRef } from 'react';
-import { useChatStore } from '@store/stores/useChatStore';
-import ChatMessage from './ChatMessage';
+import { memo, useEffect, useRef } from 'react';
+
+import { useChatStore } from '@stores/chatStore';
+import { ChatMessage } from './ChatMessage';
 
 /**
  * 채팅 메시지 목록 컴포넌트
- * 대화 내용을 표시하고 자동으로 스크롤을 최신 메시지로 이동시킵니다.
+ * 
+ * 채팅 메시지들을 목록으로 보여주는 컴포넌트입니다.
+ * 새 메시지가 추가될 때마다 자동으로 스크롤이 아래로 이동합니다.
  */
-const ChatMessageList = () => {
-  const messages = useChatStore((state) => state.messages);
-  const isLoading = useChatStore((state) => state.isLoading);
+const ChatMessageList = memo(() => {
+  const { messages, isLoading } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 새 메시지가 추가되면 스크롤을 아래로 이동
@@ -16,34 +18,38 @@ const ChatMessageList = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 메시지가 없을 때 초기 메시지 표시
-  if (messages.length === 0) {
-    return (
-      <div className="p-4 text-center text-gray-500">
-        <p>안녕하세요! 무엇을 도와드릴까요?</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 space-y-4">
-      {messages.map((message) => (
-        <ChatMessage key={message.id} message={message} />
-      ))}
-      
-      {/* 로딩 표시 */}
-      {isLoading && (
-        <div className="flex items-center gap-2 text-gray-500">
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150"></div>
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></div>
+    <div className="flex h-full flex-col space-y-4 overflow-y-auto">
+      {messages.length === 0 ? (
+        <div className="flex h-full items-center justify-center">
+          <p className="text-center text-muted-foreground">
+            무엇이든 물어보세요!
+          </p>
         </div>
+      ) : (
+        messages.map((message) => (
+          <ChatMessage
+            key={message.id}
+            type={message.type}
+            content={message.content}
+            timestamp={message.timestamp}
+          />
+        ))
       )}
       
-      {/* 스크롤 기준점 */}
+      {isLoading && (
+        <ChatMessage
+          type="bot"
+          content="생각 중..."
+          isLoading={true}
+        />
+      )}
+      
       <div ref={messagesEndRef} />
     </div>
   );
-};
+});
 
-export default ChatMessageList;
+ChatMessageList.displayName = 'ChatMessageList';
+
+export { ChatMessageList };
